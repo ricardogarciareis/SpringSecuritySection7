@@ -1,0 +1,89 @@
+Find a class inside the project: Ctrl+Shift+T
+-------------------------------------------------------------------------------
+
+Open ExceptionTranslationFilter class
+
+ExceptionTranslationFilter handles any AccessDeniedException (403) and AuthenticationException (401)
+
+If an AccessDeniedException is detected then it will invoke the handleAccessDeniedException method
+If an AuthenticationException is detected then it will invoke the handleAuthenticationException method
+
+Both methods will invoke sendStartAuthentication method
+
+sendStartAuthentication method will invoke one of the implementation of authenticationEntryPoint by invoking its commence method
+
+Open AuthenticationEntryPoint interface
+Open BasicAuthenticationEntryPoint implementation class
+
+response.setHeader("WWW-Authenticate", "Basic realm=\"" + this.realmName + "\"");
+response.sendError(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase());
+
+
+Open AccessDeniedHandler interface
+Open AccessDeniedHandlerImpl implementation class
+
+request.setAttribute(WebAttributes.ACCESS_DENIED_403, accessDeniedException);
+response.setStatus(HttpStatus.FORBIDDEN.value());
+
+								+---> AuthenticationException (401) ---> AuthenticationEntryPoint
+								|
+ExceptionTranslationFilter -----+
+								|
+								+---> AccessDeniedException (403) -----> AccessDeniedHandler
+								
+-------------------------------------------------------------------------------	
+								
+Authentication Persistence and Session Management
+https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html
+
+
+Session Fixation Configurer
+
+newSession() specifies that a new session should be created, but the session attributes from
+the original {@link HttpSession} should not be retained.
+=> New Session Strategy
+
+migrateSession() specifies that a new session should be created and the session attributes from
+the original {@link HttpSession} should be retained.
+=> Migration Strategy
+
+changeSessionId() specifies that the Servlet container-provided session fixation protection should be used. When a session authenticates, 
+the Servlet method {@code HttpServletRequest#changeSessionId()} is called to change the session ID and retain all session attributes.
+=> Change Session ID Strategy (default)
+
+none() specifies that no session fixation protection should be enabled. This may be useful when utilizing other mechanisms for protecting 
+against session fixation. For example, if application container session fixation protection is already in use. Otherwise, this option is 
+not recommended.
+=> No Session Fixation Strategy
+
+-------------------------------------------------------------------------------
+
+Authentication Events
+
+When an authentication succeeds Spring Security framework fire an AuthenticationSuccessEvent.
+When an authentication fails Spring Security framework fire an AbstractAuthenticationFailureEvent.
+
+DefaultAuthenticationEventPublisher publishes these events to the listeners.
+We need to build listeners to listen these events and execute business logic based on our requirements.
+
+We can listen Authentication Sucess or Failure events with the annotation @EventListener.
+
+
+Open ProviderManager class
+
+Inside ProviderManager class, if the parent AuthenticationManager was attempted and successful then it will publish an 
+AuthenticationSuccessEvent through the eventPublisher's method publishAuthenticationSuccess
+
+Open AuthenticationSuccessEvent class
+
+Inside ProviderManager class, if the parent AuthenticationManager was attempted and failed then it will publish an 
+AbstractAuthenticationFailureEvent through the eventPublisher's method publishAuthenticationFailure
+
+Open AbstractAuthenticationFailureEvent class
+
+The methods publishAuthenticationSuccess and publishAuthenticationFailure can be found inside DefaultAuthenticationEventPublisher class
+
+Open DefaultAuthenticationEventPublisher class
+
+-------------------------------------------------------------------------------
+
